@@ -2,6 +2,7 @@ import { Hono } from "hono";
 import { serve } from "@hono/node-server";
 import { Messenger } from "./messenger";
 import { z } from "zod";
+import fs from "fs/promises";
 
 const app = new Hono();
 
@@ -26,6 +27,12 @@ app.post("/", async (c) => {
 			highest = data.score;
 			const prettyJson = JSON.stringify(data, null, 2);
 			messenger.sendMessage(prettyJson);
+			try {
+				await fs.appendFile("scores.log", prettyJson + "\n", "utf8");
+				console.log("Score saved to scores.log");
+			} catch (err) {
+				console.error("Failed to write score to log file:", err);
+			}
 		}
 
 		return c.json(200);

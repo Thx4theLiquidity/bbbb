@@ -205,31 +205,35 @@ static inline int score_address(uchar const *d) {
     }
     score += leading_zeros * 10;
 
-    // Find first '4' and check if it's followed by three more 4s
+    // Find first 'b' and check if it's followed by three more bs
     int start_idx = leading_zeros;
-    if (nibbles[start_idx] == 4 &&
-        nibbles[start_idx + 1] == 4 &&
-        nibbles[start_idx + 2] == 4 &&
-        nibbles[start_idx + 3] == 4) {
+    // Check array bounds before accessing nibbles[start_idx+4]
+    if (start_idx + 3 < 40 && // Ensure start_idx to start_idx+3 are valid
+        nibbles[start_idx] == 0xb &&
+        nibbles[start_idx + 1] == 0xb &&
+        nibbles[start_idx + 2] == 0xb &&
+        nibbles[start_idx + 3] == 0xb) {
         score += 40;
 
-        // First nibble after row of 4 is not a 4
-        if (nibbles[start_idx+4] != 4) {
+        // First nibble after row of b is not a b
+        // Ensure start_idx+4 is a valid index before accessing
+        if (start_idx + 4 < 40 && nibbles[start_idx+4] != 0xb) {
             score += 20;
         }
     }
 
-    // Check if last 4 nibbles are all 4s
-    if (nibbles[36] == 4 &&
-        nibbles[37] == 4 &&
-        nibbles[38] == 4 &&
-        nibbles[39] == 4) {
+    // Check if last 4 nibbles are all bs
+    // Ensure indices 36-39 are valid (always true for nibbles[40])
+    if (nibbles[36] == 0xb &&
+        nibbles[37] == 0xb &&
+        nibbles[38] == 0xb &&
+        nibbles[39] == 0xb) {
         score += 20;
     }
 
-    // Count total number of 4s
+    // Count total number of bs
     for (int i = 0; i < 40; i++) {
-        if (nibbles[i] == 4) {
+        if (nibbles[i] == 0xb) {
             score += 1;
         }
     }

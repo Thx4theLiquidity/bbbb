@@ -13,25 +13,25 @@ pub fn score_address(address: &[u8]) -> i32 {
     let leading_zeros_count = nibbles.iter().take_while(|&&n| n == 0).count();
     total_score += (leading_zeros_count * 10) as i32;
 
-    // 2. Forty (40) points if the first non-zero nibble '4' is followed by 3 more '4's
-    // 3. Twenty (20) points if the first nibble after these 4 '4's is NOT '4'
+    // 2. Forty (40) points if the first non-zero nibble 'b' is followed by 3 more 'b's
+    // 3. Twenty (20) points if the first nibble after these 4 'b's is NOT 'b'
     let start_idx = leading_zeros_count;
-    if nibbles[start_idx..start_idx + 4] == [4, 4, 4, 4] {
-        total_score += 40; // Found '4444' sequence right after leading zeros
-        if start_idx + 4 < nibbles.len() && nibbles[start_idx + 4] != 4 {
-            total_score += 20; // Next nibble after '4444' is not '4'
+    if start_idx + 4 <= nibbles.len() && nibbles[start_idx..start_idx + 4] == [0xb, 0xb, 0xb, 0xb] {
+        total_score += 40; // Found 'bbbb' sequence right after leading zeros
+        if start_idx + 4 < nibbles.len() && nibbles[start_idx + 4] != 0xb {
+            total_score += 20; // Next nibble after 'bbbb' is not 'b'
         }
     }
 
-    // 4. Twenty (20) points if the last 4 nibbles are '4's
+    // 4. Twenty (20) points if the last 4 nibbles are 'b's
     let nibble_count = nibbles.len();
-    if nibbles[nibble_count - 4..] == [4, 4, 4, 4] {
+    if nibble_count >= 4 && nibbles[nibble_count - 4..] == [0xb, 0xb, 0xb, 0xb] {
         total_score += 20;
     }
 
-    // 5. One (1) point for every '4' nibble
-    let fours_count = nibbles.iter().filter(|&&n| n == 4).count();
-    total_score += fours_count as i32;
+    // 5. One (1) point for every 'b' nibble
+    let bs_count = nibbles.iter().filter(|&&n| n == 0xb).count();
+    total_score += bs_count as i32;
 
     // total_score now holds the final calculated score
     total_score
