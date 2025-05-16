@@ -230,6 +230,17 @@ pub fn gpu(config: Config) -> ocl::Result<()> {
             work_duration_millis = (now.as_secs() * 1000 + now.subsec_nanos() as u64 / 1000000)
                 - work_start_time_millis;
 
+            if work_duration_millis > 0 {
+                let attempts_per_second = WORK_SIZE as f64 / (work_duration_millis as f64 / 1000.0);
+                println!(
+                    "Device {}: {:.2} attempts/sec ({} attempts in {} ms)",
+                    config.gpu_device,
+                    attempts_per_second,
+                    WORK_SIZE,
+                    work_duration_millis
+                );
+            }
+
             // if at least one solution is found, end the loop
             if solutions[0] != 0 {
                 break;

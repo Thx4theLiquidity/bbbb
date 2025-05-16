@@ -32,8 +32,8 @@ def check_and_create_instances():
             print(f"Total Cost per hour: ${machine['dph_total']:.2f}")
             print(f"Cost per GPU per hour: ${cost_per_gpu:.2f}")
             print("-" * 40)
-            bid_price = machine['dph_total'] * 1.15 # place a lowball stink bid that is 15% above min
-            print(f"Setting initial bid at ${bid_price:.3f} (10% of ${machine['dph_total']:.2f})")
+            bid_price = machine['dph_total'] * 2.1 # place a bid that is 110% above min
+            print(f"Setting initial bid at ${bid_price:.3f} (110% above ${machine['dph_total']:.2f})")
             x = vast_sdk.create_instance(
                 ID=machine['id'],
                 template_hash=template_hash,
@@ -54,7 +54,7 @@ def check_and_create_instances():
         if instance['is_bid'] == True and instance['intended_status'] == "stopped":
             cost_per_gpu = machine['dph_total'] / machine['num_gpus']
             if cost_per_gpu <= 0.2: # Set ceiling to $0.2/h
-                bid_price = instance['min_bid'] * 1.15
+                bid_price = instance['min_bid'] * 2.1
                 x = vast_sdk.change_bid(id=instance['id'], price=bid_price)
                 print(f"Changed bid for instance {instance['id']} - {instance['num_gpus']} GPUs at ${bid_price:.3f} total (${(bid_price/instance['num_gpus']):.3f}/GPU)")
                 print(f"Original price was ${instance['min_bid']:.2f}")
@@ -66,7 +66,7 @@ def check_and_create_instances():
     print("-" * 40)
 
 def main():
-    print("Starting VastAI GPU monitoring script...")
+    print("Starting VastAI GPU monitoring script New updated version...")
     print("Checking every 15 seconds...")
     print("-" * 40)
 
