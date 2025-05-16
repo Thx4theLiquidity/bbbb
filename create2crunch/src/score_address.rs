@@ -26,16 +26,20 @@ pub fn score_address(address: &[u8]) -> i32 {
     }
 
     if consecutive_b_count >= 4 {
-        score += 200; // Significant bonus for achieving at least "BBBB"
-        score += (consecutive_b_count * 150) as i32; // Strong reward for each 'B' in this primary sequence
-    } else if consecutive_b_count > 0 { // Some 'B's, but fewer than 4
+        score += 200; // Significant bonus for achieving at least "BBBB" structure
+        score += (4 * 100) as i32; // Points for the first 4 'B's in this sequence
+        if consecutive_b_count > 4 {
+            let extra_bs_in_sequence = consecutive_b_count - 4;
+            score += (extra_bs_in_sequence * 250) as i32; // Higher points for 'B's beyond the 4th
+        }
+    } else if consecutive_b_count > 0 { // Some 'B's, but fewer than 4 (1 to 3)
         score += (consecutive_b_count * 25) as i32; // Smaller reward
     }
 
     // 4. Score Remaining 'B's (0xb) Elsewhere in the Address
-    // current_nibble_idx is now at the position *after* the leading zeros and the consecutive 'B' sequence
+    // current_nibble_idx is now at the position *after* the leading zeros and the primary consecutive 'B' sequence
     let mut remaining_b_nibbles = 0;
-    if current_nibble_idx < nibbles.len() { // Ensure we don't go out of bounds if address ended with Bs
+    if current_nibble_idx < nibbles.len() { // Ensure we don't go out of bounds
         for i in current_nibble_idx..nibbles.len() {
             if nibbles[i] == 0xb {
                 remaining_b_nibbles += 1;
