@@ -198,48 +198,39 @@ static inline int score_address(uchar const *d) {
         nibbles[2*i + 1] = d[i] & 0x0F; // Low nibble
     }
 
-    // 1. Count Leading Zero Nibbles
-    int leading_zero_nibbles = 0;
-    for (int i = 0; i < 40 && nibbles[i] == 0; i++) {
-        leading_zero_nibbles++;
+    // 1. Count Leading 'B' (0xb) Nibbles
+    int leading_b_nibbles = 0;
+    for (int i = 0; i < 40; i++) {
+        if (nibbles[i] == 0xb) {
+            leading_b_nibbles++;
+        } else {
+            break; // End of leading 'B' sequence
+        }
     }
 
-    // 2. Strict Check for Minimum Leading Zeros (3 bytes = 6 nibbles)
-    if (leading_zero_nibbles < 6) {
+    // 2. Strict Check for Minimum 10 Leading 'B's
+    if (leading_b_nibbles < 10) {
         return 0; // Address does not meet the fundamental prefix requirement
     }
-    score += 50; // Base score for meeting the 0x000000 prefix
+    score += 500; // Base score for meeting the 10 leading 'B's requirement
 
-    // 3. Score Consecutive 'B's (0xb) Immediately After Leading Zeros
-    int current_nibble_idx = leading_zero_nibbles;
-    int consecutive_b_count = 0;
-    while (current_nibble_idx < 40 && nibbles[current_nibble_idx] == 0xb) {
-        consecutive_b_count++;
-        current_nibble_idx++;
-    }
-
-    if (consecutive_b_count >= 4) {
-        score += 200; // Significant bonus for achieving at least "BBBB" structure
-        score += (4 * 100); // Points for the first 4 'B's in this sequence
-        if (consecutive_b_count > 4) {
-            int extra_bs_in_sequence = consecutive_b_count - 4;
-            score += (extra_bs_in_sequence * 250); // Higher points for 'B's beyond the 4th
-        }
-    } else if (consecutive_b_count > 0) { // Some 'B's, but fewer than 4 (1 to 3)
-        score += (consecutive_b_count * 25); // Smaller reward
+    // 3. Score for Additional Leading 'B's (beyond the first 10)
+    if (leading_b_nibbles > 10) {
+        int extra_leading_bs = leading_b_nibbles - 10;
+        score += (extra_leading_bs * 300); // High reward for each extra leading 'B'
     }
 
     // 4. Score Remaining 'B's (0xb) Elsewhere in the Address
-    // current_nibble_idx is now at the position *after* the leading zeros and the primary consecutive 'B' sequence
-    int remaining_b_nibbles = 0;
-    if (current_nibble_idx < 40) { // Ensure we don't go out of bounds
-        for (int i = current_nibble_idx; i < 40; i++) {
+    // Start counting from the nibble *after* the leading 'B' sequence
+    int remaining_b_nibbles_elsewhere = 0;
+    if (leading_b_nibbles < 40) { // Ensure there are nibbles left to check
+        for (int i = leading_b_nibbles; i < 40; i++) {
             if (nibbles[i] == 0xb) {
-                remaining_b_nibbles++;
+                remaining_b_nibbles_elsewhere++;
             }
         }
     }
-    score += remaining_b_nibbles * 15; // Moderate reward for additional 'B's
+    score += (remaining_b_nibbles_elsewhere * 25); // Moderate reward for other 'B's
 
     return score;
 }

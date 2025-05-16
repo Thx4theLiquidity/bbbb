@@ -8,6 +8,7 @@ use reqwest::blocking::Client;
 use std::fmt::Write as _;
 use std::time::{SystemTime, UNIX_EPOCH};
 use tiny_keccak::{Hasher, Keccak};
+use crate::score_address::ScoreBreakdown;
 
 pub mod score_address;
 
@@ -156,7 +157,7 @@ pub fn gpu(config: Config) -> ocl::Result<()> {
     let mut work_duration_millis: u64 = 0;
 
     // Initialize the highest score found so far
-    let mut highest_score = 0;
+    let mut highest_score_details: Option<ScoreBreakdown> = None;
 
     // begin searching for addresses
     loop {
@@ -288,10 +289,13 @@ pub fn gpu(config: Config) -> ocl::Result<()> {
             let address = <&Address>::try_from(&res[12..]).unwrap();
 
             // score the address
-            let score = score_address::score_address(address.as_slice());
+            let score_details = score_address::score_address(address.as_slice());
 
-            if score > highest_score {
-                highest_score = score;
+            // We need to compare based on total_score, but potentially send the whole breakdown
+            let current_highest_total_score = highest_score_details.as_ref().map_or(0, |sd| sd.total_score);
+
+            if score_details.total_score > current_highest_total_score {
+                highest_score_details = Some(score_details);
 
                 // Send result to configured endpoint
                 let result = client
@@ -302,11 +306,24 @@ pub fn gpu(config: Config) -> ocl::Result<()> {
                             hex::encode(salt),
                             hex::encode(solution)),
                         "address": address.to_string(),
-                        "score": score
+                        "score": highest_score_details.as_ref().unwrap().total_score,
+                        "score_breakdown": {
+                            "leading_b": highest_score_details.as_ref().unwrap().leading_b_count,
+                            "extra_leading_b": highest_score_details.as_ref().unwrap().extra_leading_b_count,
+                            "other_b": highest_score_details.as_ref().unwrap().other_b_count
+                        }
                     }))
                     .send();
 
-                println!("Found salt {} for address {}", score, address);
+                println!(
+                    "New highest score: {}. Address: {}, Salt: 0x{}{}{}, Breakdown: {:?}",
+                    highest_score_details.as_ref().unwrap().total_score,
+                    address,
+                    hex::encode(config.calling_address),
+                    hex::encode(salt),
+                    hex::encode(solution),
+                    highest_score_details.as_ref().unwrap()
+                );
 
                 if let Err(e) = result {
                     eprintln!("Failed to send result to endpoint: {}", e);
