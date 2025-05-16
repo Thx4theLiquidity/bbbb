@@ -66,7 +66,7 @@ def check_and_create_instances():
     print("-" * 40)
 
 def main():
-    print("Starting VastAI GPU monitoring script New updated version...")
+    print("Starting VastAI GPU monitoring script New updated...")
     print("Checking every 15 seconds...")
     print("-" * 40)
 
