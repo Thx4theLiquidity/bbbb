@@ -189,54 +189,53 @@ static inline void keccakf(ulong *a)
 }
 
 static inline int score_address(uchar const *d) {
-    int score = 0;
     uchar nibbles[40];
+    int score = 0;
 
     // Convert bytes to nibbles
     for (int i = 0; i < 20; i++) {
-        nibbles[2*i] = d[i] >> 4;
-        nibbles[2*i + 1] = d[i] & 0x0F;
+        nibbles[2*i] = d[i] >> 4;      // High nibble
+        nibbles[2*i + 1] = d[i] & 0x0F; // Low nibble
     }
 
-    // Count leading zero nibbles
-    int leading_zeros = 0;
+    // 1. Count Leading Zero Nibbles
+    int leading_zero_nibbles = 0;
     for (int i = 0; i < 40 && nibbles[i] == 0; i++) {
-        leading_zeros++;
+        leading_zero_nibbles++;
     }
-    score += leading_zeros * 10;
 
-    // Find first 'b' and check if it's followed by three more bs
-    int start_idx = leading_zeros;
-    // Check array bounds before accessing nibbles[start_idx+4]
-    if (start_idx + 3 < 40 && // Ensure start_idx to start_idx+3 are valid
-        nibbles[start_idx] == 0xb &&
-        nibbles[start_idx + 1] == 0xb &&
-        nibbles[start_idx + 2] == 0xb &&
-        nibbles[start_idx + 3] == 0xb) {
-        score += 40;
+    // 2. Strict Check for Minimum Leading Zeros (3 bytes = 6 nibbles)
+    if (leading_zero_nibbles < 6) {
+        return 0; // Address does not meet the fundamental prefix requirement
+    }
+    score += 50; // Base score for meeting the 0x000000 prefix
 
-        // First nibble after row of b is not a b
-        // Ensure start_idx+4 is a valid index before accessing
-        if (start_idx + 4 < 40 && nibbles[start_idx+4] != 0xb) {
-            score += 20;
+    // 3. Score Consecutive 'B's (0xb) Immediately After Leading Zeros
+    int current_nibble_idx = leading_zero_nibbles;
+    int consecutive_b_count = 0;
+    while (current_nibble_idx < 40 && nibbles[current_nibble_idx] == 0xb) {
+        consecutive_b_count++;
+        current_nibble_idx++;
+    }
+
+    if (consecutive_b_count >= 4) {
+        score += 200; // Significant bonus for achieving at least "BBBB"
+        score += consecutive_b_count * 150; // Strong reward for each 'B' in this primary sequence
+    } else if (consecutive_b_count > 0) { // Some 'B's, but fewer than 4
+        score += consecutive_b_count * 25; // Smaller reward
+    }
+
+    // 4. Score Remaining 'B's (0xb) Elsewhere in the Address
+    // current_nibble_idx is now at the position *after* the leading zeros and the consecutive 'B' sequence
+    int remaining_b_nibbles = 0;
+    if (current_nibble_idx < 40) { // Ensure we don't go out of bounds if address ended with Bs
+        for (int i = current_nibble_idx; i < 40; i++) {
+            if (nibbles[i] == 0xb) {
+                remaining_b_nibbles++;
+            }
         }
     }
-
-    // Check if last 4 nibbles are all bs
-    // Ensure indices 36-39 are valid (always true for nibbles[40])
-    if (nibbles[36] == 0xb &&
-        nibbles[37] == 0xb &&
-        nibbles[38] == 0xb &&
-        nibbles[39] == 0xb) {
-        score += 20;
-    }
-
-    // Count total number of bs
-    for (int i = 0; i < 40; i++) {
-        if (nibbles[i] == 0xb) {
-            score += 1;
-        }
-    }
+    score += remaining_b_nibbles * 15; // Moderate reward for additional 'B's
 
     return score;
 }
