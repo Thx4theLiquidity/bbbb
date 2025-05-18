@@ -1,23 +1,12 @@
-// Renaming the previous struct and function to avoid confusion if you want to switch back easily later.
-// For now, we'll comment them out. If you are sure you don't need the 'B' logic, they can be deleted.
-// #[derive(Debug)]
-// pub struct ScoreBreakdown {
-//     pub total_score: i32,
-//     pub leading_b_count: usize,
-//     pub extra_leading_b_count: usize, 
-//     pub other_b_count: usize,
-// }
-// pub fn score_address_for_b(address: &[u8]) -> ScoreBreakdown { ... previous B logic ... }
-
 #[derive(Debug)] // Add Debug for easier printing if needed
-pub struct ScoreBreakdownZeros {
+pub struct ScoreBreakdown {
     pub total_score: i32,
-    pub leading_zero_count: usize,
-    pub extra_leading_zero_count: usize, // Number of leading Zeros beyond the initial 10
-    pub other_zero_count: usize,
+    pub leading_b_count: usize,
+    pub extra_leading_b_count: usize, // Number of leading Bs beyond the initial 10
+    pub other_b_count: usize,
 }
 
-pub fn score_address(address: &[u8]) -> ScoreBreakdownZeros { // Changed return type
+pub fn score_address(address: &[u8]) -> ScoreBreakdown {
     // Convert the address bytes to a fixed array of nibbles
     let mut nibbles = [0u8; 40]; // An Ethereum address has 20 bytes, hence 40 nibbles
     for (i, &byte) in address.iter().enumerate() {
@@ -26,52 +15,52 @@ pub fn score_address(address: &[u8]) -> ScoreBreakdownZeros { // Changed return 
     }
 
     let mut score: i32 = 0;
-    let mut calculated_leading_zeros = 0;
-    let mut calculated_extra_leading_zeros = 0;
-    let mut calculated_other_zeros = 0;
+    let mut calculated_leading_b_nibbles = 0;
+    let mut calculated_extra_leading_bs = 0;
+    let mut calculated_other_b_nibbles = 0;
 
-    // 1. Count Leading '0' (0x0) Nibbles
+    // 1. Count Leading 'B' (0xb) Nibbles
     for i in 0..nibbles.len() {
-        if nibbles[i] == 0x0 { // Target 0x0 now
-            calculated_leading_zeros += 1;
+        if nibbles[i] == 0xb {
+            calculated_leading_b_nibbles += 1;
         } else {
-            break; // End of leading '0' sequence
+            break; // End of leading 'B' sequence
         }
     }
 
-    // 2. Strict Check for Minimum 10 Leading '0's
-    if calculated_leading_zeros < 10 {
-        return ScoreBreakdownZeros {
+    // 2. Strict Check for Minimum 10 Leading 'B's
+    if calculated_leading_b_nibbles < 10 {
+        return ScoreBreakdown {
             total_score: 0,
-            leading_zero_count: calculated_leading_zeros,
-            extra_leading_zero_count: 0,
-            other_zero_count: 0,
+            leading_b_count: calculated_leading_b_nibbles, // still report how many were found
+            extra_leading_b_count: 0,
+            other_b_count: 0, // No need to count others if prefix fails
         };
     }
-    score += 500; // Base score for meeting the 10 leading '0's requirement
+    score += 500; // Base score for meeting the 10 leading 'B's requirement
 
-    // 3. Score for Additional Leading '0's (beyond the first 10)
-    if calculated_leading_zeros > 10 {
-        calculated_extra_leading_zeros = calculated_leading_zeros - 10;
-        score += (calculated_extra_leading_zeros * 300) as i32; // High reward for each extra leading '0'
+    // 3. Score for Additional Leading 'B's (beyond the first 10)
+    if calculated_leading_b_nibbles > 10 {
+        calculated_extra_leading_bs = calculated_leading_b_nibbles - 10;
+        score += (calculated_extra_leading_bs * 300) as i32; // High reward for each extra leading 'B'
     }
 
-    // 4. Score Remaining '0's (0x0) Elsewhere in the Address
-    // Start counting from the nibble *after* the leading '0' sequence
-    if calculated_leading_zeros < nibbles.len() { // Ensure there are nibbles left to check
-        for i in calculated_leading_zeros..nibbles.len() {
-            if nibbles[i] == 0x0 { // Target 0x0 now
-                calculated_other_zeros += 1;
+    // 4. Score Remaining 'B's (0xb) Elsewhere in the Address
+    // Start counting from the nibble *after* the leading 'B' sequence
+    if calculated_leading_b_nibbles < nibbles.len() { // Ensure there are nibbles left to check
+        for i in calculated_leading_b_nibbles..nibbles.len() {
+            if nibbles[i] == 0xb {
+                calculated_other_b_nibbles += 1;
             }
         }
     }
-    score += (calculated_other_zeros * 25) as i32; // Moderate reward for other '0's
+    score += (calculated_other_b_nibbles * 25) as i32; // Moderate reward for other 'B's
 
-    ScoreBreakdownZeros {
+    ScoreBreakdown {
         total_score: score,
-        leading_zero_count: calculated_leading_zeros,
-        extra_leading_zero_count: calculated_extra_leading_zeros,
-        other_zero_count: calculated_other_zeros,
+        leading_b_count: calculated_leading_b_nibbles,
+        extra_leading_b_count: calculated_extra_leading_bs,
+        other_b_count: calculated_other_b_nibbles,
     }
 }
 

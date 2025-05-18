@@ -198,39 +198,39 @@ static inline int score_address(uchar const *d) {
         nibbles[2*i + 1] = d[i] & 0x0F; // Low nibble
     }
 
-    // 1. Count Leading '0' (0x0) Nibbles
-    int calculated_leading_zeros = 0;
+    // 1. Count Leading 'B' (0xb) Nibbles
+    int leading_b_nibbles = 0;
     for (int i = 0; i < 40; i++) {
-        if (nibbles[i] == 0x0) { // Target 0x0
-            calculated_leading_zeros++;
+        if (nibbles[i] == 0xb) {
+            leading_b_nibbles++;
         } else {
-            break; // End of leading '0' sequence
+            break; // End of leading 'B' sequence
         }
     }
 
-    // 2. Strict Check for Minimum 10 Leading '0's
-    if (calculated_leading_zeros < 10) {
-        return 0;
+    // 2. Strict Check for Minimum 10 Leading 'B's
+    if (leading_b_nibbles < 10) {
+        return 0; // Address does not meet the fundamental prefix requirement
     }
-    score += 500; // Base score
+    score += 500; // Base score for meeting the 10 leading 'B's requirement
 
-    // 3. Score for Additional Leading '0's (beyond the first 10)
-    int calculated_extra_leading_zeros = 0;
-    if (calculated_leading_zeros > 10) {
-        calculated_extra_leading_zeros = calculated_leading_zeros - 10;
-        score += (calculated_extra_leading_zeros * 300);
+    // 3. Score for Additional Leading 'B's (beyond the first 10)
+    if (leading_b_nibbles > 10) {
+        int extra_leading_bs = leading_b_nibbles - 10;
+        score += (extra_leading_bs * 300); // High reward for each extra leading 'B'
     }
 
-    // 4. Score Remaining '0's (0x0) Elsewhere in the Address
-    int calculated_other_zeros = 0;
-    if (calculated_leading_zeros < 40) { // Ensure there are nibbles left to check
-        for (int i = calculated_leading_zeros; i < 40; i++) {
-            if (nibbles[i] == 0x0) { // Target 0x0
-                calculated_other_zeros++;
+    // 4. Score Remaining 'B's (0xb) Elsewhere in the Address
+    // Start counting from the nibble *after* the leading 'B' sequence
+    int remaining_b_nibbles_elsewhere = 0;
+    if (leading_b_nibbles < 40) { // Ensure there are nibbles left to check
+        for (int i = leading_b_nibbles; i < 40; i++) {
+            if (nibbles[i] == 0xb) {
+                remaining_b_nibbles_elsewhere++;
             }
         }
     }
-    score += (calculated_other_zeros * 25);
+    score += (remaining_b_nibbles_elsewhere * 25); // Moderate reward for other 'B's
 
     return score;
 }
