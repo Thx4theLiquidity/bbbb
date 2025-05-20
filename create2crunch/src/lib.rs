@@ -8,7 +8,7 @@ use reqwest::blocking::Client;
 use std::fmt::Write as _;
 use std::time::{SystemTime, UNIX_EPOCH};
 use tiny_keccak::{Hasher, Keccak};
-use crate::score_address::ScoreBreakdown;
+use crate::score_address::ScoreBreakdownZeros;
 
 pub mod score_address;
 
@@ -157,7 +157,7 @@ pub fn gpu(config: Config) -> ocl::Result<()> {
     let mut work_duration_millis: u64 = 0;
 
     // Initialize the highest score found so far
-    let mut highest_score_details: Option<ScoreBreakdown> = None;
+    let mut highest_score_details: Option<ScoreBreakdownZeros> = None;
 
     // begin searching for addresses
     loop {
@@ -291,7 +291,6 @@ pub fn gpu(config: Config) -> ocl::Result<()> {
             // score the address
             let score_details = score_address::score_address(address.as_slice());
 
-            // We need to compare based on total_score, but potentially send the whole breakdown
             let current_highest_total_score = highest_score_details.as_ref().map_or(0, |sd| sd.total_score);
 
             if score_details.total_score > current_highest_total_score {
@@ -308,9 +307,9 @@ pub fn gpu(config: Config) -> ocl::Result<()> {
                         "address": address.to_string(),
                         "score": highest_score_details.as_ref().unwrap().total_score,
                         "score_breakdown": {
-                            "leading_b": highest_score_details.as_ref().unwrap().leading_b_count,
-                            "extra_leading_b": highest_score_details.as_ref().unwrap().extra_leading_b_count,
-                            "other_b": highest_score_details.as_ref().unwrap().other_b_count
+                            "leading_zeros": highest_score_details.as_ref().unwrap().leading_zero_count,
+                            "extra_leading_zeros": highest_score_details.as_ref().unwrap().extra_leading_zero_count,
+                            "other_zeros": highest_score_details.as_ref().unwrap().other_zero_count
                         }
                     }))
                     .send();
