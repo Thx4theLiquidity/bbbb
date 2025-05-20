@@ -10,18 +10,18 @@ const messenger = new Messenger();
 
 let highest = 0;
 
-// Define the schema for the new score breakdown (for zeros)
-const ScoreBreakdownZerosSchema = z.object({
-	leading_zeros: z.number(),
-	extra_leading_zeros: z.number(),
-	other_zeros: z.number(),
+// Define the schema for the score breakdown
+const ScoreBreakdownSchema = z.object({
+	leading_b: z.number(),
+	extra_leading_b: z.number(),
+	other_b: z.number(),
 });
 
 const LogSchema = z.object({
 	score: z.number(),
 	address: z.string(),
 	salt: z.string(),
-	score_breakdown: ScoreBreakdownZerosSchema, // Use the new zeros breakdown schema
+	score_breakdown: ScoreBreakdownSchema, // Include the score breakdown in the main log schema
 });
 
 // Endpoint to submit logs
