@@ -12,8 +12,26 @@ RUN apt-get update && apt-get install -y \
 RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
 ENV PATH="/root/.cargo/bin:${PATH}"
 
+# Install Node.js 18.x
+RUN curl -fsSL https://deb.nodesource.com/setup_18.x | bash - && \
+    apt-get install -y nodejs
+
 WORKDIR /home
 
+# Copy all source files
 COPY . .
 
+# Build the Rust binary
 RUN cargo build --release
+
+# Install Node.js dependencies
+RUN npm install
+
+# Set environment variables with defaults
+ENV DEVICE_ID=0
+ENV MINER_PATH=/home/target/release/fourfourfourfour
+ENV REDIS_HOST=localhost
+ENV REDIS_PORT=6379
+
+# Default command runs the Node.js worker
+CMD ["npm", "start"]

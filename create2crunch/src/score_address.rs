@@ -2,7 +2,7 @@
 pub struct ScoreBreakdown {
     pub total_score: i32,
     pub leading_b_count: usize,
-    pub extra_leading_b_count: usize, // Number of leading Bs beyond the initial 10
+    pub extra_leading_b_count: usize, // Number of leading Bs beyond the initial 8
     pub other_b_count: usize,
 }
 
@@ -28,8 +28,8 @@ pub fn score_address(address: &[u8]) -> ScoreBreakdown {
         }
     }
 
-    // 2. Strict Check for Minimum 10 Leading 'B's
-    if calculated_leading_b_nibbles < 10 {
+    // 2. Strict Check for Minimum 8 Leading 'B's (updated from 10 to 8)
+    if calculated_leading_b_nibbles < 8 {
         return ScoreBreakdown {
             total_score: 0,
             leading_b_count: calculated_leading_b_nibbles, // still report how many were found
@@ -37,11 +37,11 @@ pub fn score_address(address: &[u8]) -> ScoreBreakdown {
             other_b_count: 0, // No need to count others if prefix fails
         };
     }
-    score += 500; // Base score for meeting the 10 leading 'B's requirement
+    score += 500; // Base score for meeting the 8 leading 'B's requirement
 
-    // 3. Score for Additional Leading 'B's (beyond the first 10)
-    if calculated_leading_b_nibbles > 10 {
-        calculated_extra_leading_bs = calculated_leading_b_nibbles - 10;
+    // 3. Score for Additional Leading 'B's (beyond the first 8)
+    if calculated_leading_b_nibbles > 8 {
+        calculated_extra_leading_bs = calculated_leading_b_nibbles - 8;
         score += (calculated_extra_leading_bs * 300) as i32; // High reward for each extra leading 'B'
     }
 
