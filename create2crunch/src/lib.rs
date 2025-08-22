@@ -56,7 +56,7 @@ impl Config {
         };
         let endpoint_url = match args.next() {
             Some(arg) => arg,
-            None => panic!("need endpoint_url"),
+            None => String::new(), // Empty string if no endpoint provided
         };
 
         // convert main arguments from hex string to vector of bytes
@@ -297,37 +297,48 @@ pub fn gpu(config: Config) -> ocl::Result<()> {
             if score_details.total_score > current_highest_total_score {
                 highest_score_details = Some(score_details);
 
-                // Send result to configured endpoint
-                let result = client
-                    .post(&config.endpoint_url)
-                    .json(&serde_json::json!({
-                        "salt": format!("0x{}{}{}",
-                            hex::encode(config.calling_address),
-                            hex::encode(salt),
-                            hex::encode(solution)),
-                        "address": address.to_string(),
-                        "score": highest_score_details.as_ref().unwrap().total_score,
-                        "score_breakdown": {
-                            "leading_b": highest_score_details.as_ref().unwrap().leading_b_count,
-                            "extra_leading_b": highest_score_details.as_ref().unwrap().extra_leading_b_count,
-                            "other_b": highest_score_details.as_ref().unwrap().other_b_count
-                        }
-                    }))
-                    .send();
-
+                // Print result in expected format for the Node.js wrapper to parse
                 println!(
-                    "New highest score: {}. Address: {}, Salt: 0x{}{}{}, Breakdown: {:?}",
-                    highest_score_details.as_ref().unwrap().total_score,
-                    address,
+                    "SALT: 0x{}{}{} ADDRESS: {}",
                     hex::encode(config.calling_address),
                     hex::encode(salt),
                     hex::encode(solution),
-                    highest_score_details.as_ref().unwrap()
+                    address
                 );
 
-                if let Err(e) = result {
-                    eprintln!("Failed to send result to endpoint: {}", e);
+                // Send result to configured endpoint (if provided)
+                if !config.endpoint_url.is_empty() {
+                    let result = client
+                        .post(&config.endpoint_url)
+                        .json(&serde_json::json!({
+                            "salt": format!("0x{}{}{}",
+                                hex::encode(config.calling_address),
+                                hex::encode(salt),
+                                hex::encode(solution)),
+                            "address": address.to_string(),
+                            "score": highest_score_details.as_ref().unwrap().total_score,
+                            "score_breakdown": {
+                                "leading_b": highest_score_details.as_ref().unwrap().leading_b_count,
+                                "extra_leading_b": highest_score_details.as_ref().unwrap().extra_leading_b_count,
+                                "other_b": highest_score_details.as_ref().unwrap().other_b_count
+                            }
+                        }))
+                        .send();
+
+                    if let Err(e) = result {
+                        eprintln!("Failed to send result to endpoint: {}", e);
+                    }
+                } else {
+                    // Also print detailed scoring info for debugging
+                    eprintln!(
+                        "Score: {}. Breakdown: {:?}",
+                        highest_score_details.as_ref().unwrap().total_score,
+                        highest_score_details.as_ref().unwrap()
+                    );
                 }
+
+                // Exit after finding the first valid result (8+ leading b's)
+                return Ok(());
             }
         }
     }
