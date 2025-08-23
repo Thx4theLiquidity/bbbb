@@ -1,0 +1,46 @@
+FROM nvidia/cuda:11.8-devel-ubuntu20.04
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+RUN apt-get update && apt-get install -y \
+    curl \
+    build-essential \
+    ocl-icd-opencl-dev \
+    opencl-headers \
+    clinfo \
+    git \
+    pkg-config \
+    libssl-dev \
+    ca-certificates \
+    gnupg \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Rust
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+ENV PATH="/root/.cargo/bin:${PATH}"
+
+# Install Node.js 18.x
+RUN curl -fsSL https://deb.nodesource.com/setup_18.x | bash - && \
+    apt-get install -y nodejs && \
+    rm -rf /var/lib/apt/lists/*
+
+WORKDIR /home
+
+# Copy package.json first for better caching
+COPY package*.json ./
+RUN npm ci --only=production
+
+# Copy source files
+COPY . .
+
+# Build the Rust binary
+RUN cargo build --release
+
+# Set environment variables
+ENV DEVICE_ID=0
+ENV MINER_PATH=/home/target/release/fourfourfourfour
+ENV REDIS_HOST=localhost
+ENV REDIS_PORT=6379
+
+# Default command
+CMD ["node", "worker.js"]

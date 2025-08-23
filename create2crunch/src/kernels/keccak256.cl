@@ -208,15 +208,15 @@ static inline int score_address(uchar const *d) {
         }
     }
 
-    // 2. Strict Check for Minimum 10 Leading 'B's
-    if (leading_b_nibbles < 10) {
+    // 2. Strict Check for Minimum 8 Leading 'B's
+    if (leading_b_nibbles < 8) {
         return 0; // Address does not meet the fundamental prefix requirement
     }
-    score += 500; // Base score for meeting the 10 leading 'B's requirement
+    score += 500; // Base score for meeting the 8 leading 'B's requirement
 
-    // 3. Score for Additional Leading 'B's (beyond the first 10)
-    if (leading_b_nibbles > 10) {
-        int extra_leading_bs = leading_b_nibbles - 10;
+    // 3. Score for Additional Leading 'B's (beyond the first 8)
+    if (leading_b_nibbles > 8) {
+        int extra_leading_bs = leading_b_nibbles - 8;
         score += (extra_leading_bs * 300); // High reward for each extra leading 'B'
     }
 
