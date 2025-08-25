@@ -6,7 +6,9 @@ const path = require('path');
 const redisConfig = {
     host: process.env.REDIS_HOST || 'localhost',
     port: process.env.REDIS_PORT || 6379,
+    username: process.env.REDIS_USERNAME || undefined,
     password: process.env.REDIS_PASS || '',
+    tls: process.env.REDIS_TLS === 'true' ? {} : undefined, // Enable TLS if REDIS_TLS=true
 };
 
 // Worker configuration
