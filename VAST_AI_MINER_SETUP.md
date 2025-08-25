@@ -12,12 +12,12 @@
 - `create2crunch/Dockerfile`: aligned to use the same entrypoint pattern.
 
 ### Which Dockerfile to use
-- **Build with**: `create2crunch/Dockerfile.working` (OpenCL runtime, Ubuntu 20.04; no CUDA required).
+- **Build with**: `create2crunch/Dockerfile` (now Ubuntu 20.04 + OpenCL; JSON ENTRYPOINT). The previously separate `Dockerfile.working` is no longer needed.
 
 ### Build and push commands
 ```bash
 # Build
-docker build -f create2crunch/Dockerfile.working -t liqliq/vanity-miner:latest ./create2crunch
+docker build -f create2crunch/Dockerfile -t liqliq/vanity-miner:latest ./create2crunch
 
 # Login (when prompted, paste your Docker Hub Personal Access Token)
 docker login -u liqliq
@@ -51,6 +51,17 @@ bash /home/entrypoint.sh
   - `MINER_PATH` (defaults to `/home/target/release/fourfourfourfour`)
   - No need to set `DEVICE_ID`; one worker per detected GPU is launched automatically.
 
+#### Vast.ai NVIDIA CDI error ("unresolvable CDI devices nvidia.com/gpu=1: unknown")
+- This is a host/runtime issue, not an image issue. If you see this error when Vast.ai starts your container, ask the provider to:
+  - Ensure NVIDIA Container Toolkit is installed and CDI enabled, then generate CDI spec on the host:
+    - `sudo nvidia-ctk cdi generate --output=/etc/cdi/nvidia.yaml`
+    - `nvidia-ctk cdi list` should show `nvidia.com/gpu=all` and indices.
+  - Or disable CDI in their Docker runtime until fixed (depends on their host setup), or run with classic `--gpus` flags.
+- As a user on Vast.ai UI:
+  - Prefer leaving start command empty (we already use JSON ENTRYPOINT).
+  - Avoid forcing `NVIDIA_VISIBLE_DEVICES=1`/`NV_GPU=1` unless needed; select GPU in Vast.ai UI instead.
+  - If CDI errors persist, switch to a different provider instance where NVIDIA runtime is properly configured.
+
 ### Local run example (for quick verification)
 ```bash
 docker run --rm --gpus all \
@@ -83,7 +94,7 @@ docker run --rm --gpus all \
 
 #### Build & Push
 ```bash
-docker build -f create2crunch/Dockerfile.working -t liqliq/vanity-miner:latest ./create2crunch
+docker build -f create2crunch/Dockerfile -t liqliq/vanity-miner:latest ./create2crunch
 docker login -u liqliq
 docker push liqliq/vanity-miner:latest
 ```
