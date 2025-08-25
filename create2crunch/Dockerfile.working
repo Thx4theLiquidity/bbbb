@@ -42,5 +42,9 @@ ENV MINER_PATH=/home/target/release/fourfourfourfour
 ENV REDIS_HOST=localhost
 ENV REDIS_PORT=6379
 
+# Copy startup script and make it executable
+COPY start-miner.sh /usr/local/bin/start-miner.sh
+RUN chmod +x /usr/local/bin/start-miner.sh
+
 # Default command
-CMD ["node", "worker.js"]
+ENTRYPOINT ["/usr/local/bin/start-miner.sh"]
