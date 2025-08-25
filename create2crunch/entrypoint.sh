@@ -3,11 +3,13 @@ set -euo pipefail
 
 echo "🚀 Starting Vanity Miner"
 
-if command -v nvidia-smi >/dev/null 2>&1; then
+if command -v clinfo >/dev/null 2>&1; then
+  GPU_COUNT=$(clinfo -l 2>/dev/null | awk '/^ +Device #/{count++} END{print count+0}')
+elif command -v nvidia-smi >/dev/null 2>&1; then
   nvidia-smi --list-gpus || true
   GPU_COUNT=$(nvidia-smi --list-gpus | wc -l || echo 0)
 else
-  echo "nvidia-smi not found; assuming 0 GPUs"
+  echo "No GPU tooling found; assuming 0 GPUs"
   GPU_COUNT=0
 fi
 
