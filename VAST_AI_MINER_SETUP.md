@@ -67,3 +67,36 @@ docker run --rm --gpus all \
 - **GPU detection**: Ensure the instance exposes GPUs; inside the container prefer `clinfo -l` to list OpenCL devices. On NVIDIA, `nvidia-smi` may also list devices but OpenCL availability is validated by `clinfo`.
 - **Miner binary path**: Default `MINER_PATH=/home/target/release/fourfourfourfour` is built during image build. Override only if you customized.
 - **Logs**: The entrypoint tails `/tmp/miner_*.log` for each worker.
+
+### Quick Deployment Summary
+
+#### Vast.ai
+- Image: `docker.io/liqliq/vanity-miner:latest`
+- Start command: leave empty (ENTRYPOINT starts `/home/entrypoint.sh`)
+- GPU: enable GPUs for the instance
+- Environment variables (choose one style):
+  - Single URL:
+    - `REDIS_URL` (e.g., `rediss://user:pass@host:port` or `redis://host:port`)
+  - Discrete vars:
+    - `REDIS_HOST`, `REDIS_PORT`, `REDIS_USERNAME` (if required), `REDIS_PASS`, `REDIS_TLS=true` (if TLS)
+  - Optional: `MINER_PATH` (default `/home/target/release/fourfourfourfour`)
+
+#### Build & Push
+```bash
+docker build -f create2crunch/Dockerfile.working -t liqliq/vanity-miner:latest ./create2crunch
+docker login -u liqliq
+docker push liqliq/vanity-miner:latest
+```
+
+#### On-instance checks (inside container)
+```bash
+# OpenCL devices
+clinfo -l
+
+# Tail miner logs (already tailed to stdout)
+tail -F /tmp/miner_*.log
+
+# Redis connectivity
+redis-cli -u "$REDIS_URL" ping  # if using REDIS_URL
+redis-cli -h "$REDIS_HOST" -p "$REDIS_PORT" ${REDIS_PASS:+-a "$REDIS_PASS"} ping  # discrete vars
+```
