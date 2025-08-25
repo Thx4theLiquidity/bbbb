@@ -25,7 +25,7 @@ COPY . .
 RUN cargo build --release
 
 # Install Node.js dependencies
-RUN npm install
+RUN npm install --only=production
 
 # Set environment variables with defaults
 ENV DEVICE_ID=0
@@ -33,5 +33,9 @@ ENV MINER_PATH=/home/target/release/fourfourfourfour
 ENV REDIS_HOST=localhost
 ENV REDIS_PORT=6379
 
-# Default command runs the Node.js worker
-CMD ["npm", "start"]
+# Copy entrypoint and make executable
+COPY entrypoint.sh /home/entrypoint.sh
+RUN chmod +x /home/entrypoint.sh
+
+# Use JSON-form ENTRYPOINT to prevent signal handling issues
+ENTRYPOINT ["bash", "/home/entrypoint.sh"]
