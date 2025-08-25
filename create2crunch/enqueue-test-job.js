@@ -2,12 +2,18 @@ const { Queue } = require('bullmq');
 
 (async () => {
   try {
-    const q = new Queue('vanitySalt', { connection: { host: '127.0.0.1' } });
+    const q = new Queue('vanitySalt', { 
+      connection: { 
+        host: 'redis-19685.c82.us-east-1-2.ec2.redns.redis-cloud.com',
+        port: 19685,
+        password: 'eEQen6j50qkNhDSHLXXRslkyfX5K8cfw'
+      } 
+    });
     
     await q.add('mine', {
-      tokenId: 'test123',
+      tokenId: 'test-8-nibbles-' + Date.now(),
       deployerAddress: '0x000000000000000000000000000000000000dEaD',
-      initCodeHash: '0x' + '11'.repeat(32),
+      initCodeHash: '0x' + '22'.repeat(32),
       minLeadingBs: 8
     }, { timeout: 300_000 });
     
