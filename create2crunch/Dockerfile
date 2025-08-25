@@ -1,33 +1,50 @@
-FROM nvidia/opencl:devel-ubuntu18.04
+FROM ubuntu:20.04
+
+ENV DEBIAN_FRONTEND=noninteractive
 
 RUN apt-get update && apt-get install -y \
+    ca-certificates \
+    gnupg \
     curl \
     build-essential \
-    ocl-icd-opencl-dev \
-    git \
     pkg-config \
-    libssl-dev
+    libssl-dev \
+    git \
+    ocl-icd-opencl-dev \
+    opencl-headers \
+    clinfo \
+    && rm -rf /var/lib/apt/lists/*
+
+# Ensure OpenCL ICD loader can find the NVIDIA vendor library when GPUs are exposed
+RUN mkdir -p /etc/OpenCL/vendors \
+    && echo "libnvidia-opencl.so.1" > /etc/OpenCL/vendors/nvidia.icd
+
+# Hint to NVIDIA Container Toolkit (harmless if not present)
+ENV NVIDIA_VISIBLE_DEVICES=all
+ENV NVIDIA_DRIVER_CAPABILITIES=compute,utility
+
+# Install Node.js 18.x
+RUN curl -fsSL https://deb.nodesource.com/setup_18.x | bash - && \
+    apt-get update && apt-get install -y nodejs && \
+    rm -rf /var/lib/apt/lists/*
 
 # Install Rust
 RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
 ENV PATH="/root/.cargo/bin:${PATH}"
 
-# Install Node.js 16.x (compatible with Ubuntu 18.04)
-RUN curl -fsSL https://deb.nodesource.com/setup_16.x | bash - && \
-    apt-get install -y nodejs
-
 WORKDIR /home
 
-# Copy all source files
+# Copy package manifests and install production deps (better layer caching)
+COPY package*.json ./
+RUN npm ci --only=production || npm install --only=production
+
+# Copy source files
 COPY . .
 
 # Build the Rust binary
 RUN cargo build --release
 
-# Install Node.js dependencies
-RUN npm install --only=production
-
-# Set environment variables with defaults
+# Set environment variables
 ENV DEVICE_ID=0
 ENV MINER_PATH=/home/target/release/fourfourfourfour
 ENV REDIS_HOST=localhost
@@ -37,5 +54,5 @@ ENV REDIS_PORT=6379
 COPY entrypoint.sh /home/entrypoint.sh
 RUN chmod +x /home/entrypoint.sh
 
-# Use JSON-form ENTRYPOINT to prevent signal handling issues
+# Use JSON-form ENTRYPOINT to avoid signal handling issues
 ENTRYPOINT ["bash", "/home/entrypoint.sh"]
