@@ -58,7 +58,9 @@ const worker = new Worker('vanitySalt', async (job) => {
                     salt: match[1],
                     vanityAddress: match[2]
                 };
-                console.log(`Found vanity address for job ${job.id}: ${found.vanityAddress}`);
+                console.log(`✅ FOUND RESULT for job ${job.id}:`);
+                console.log(`   Salt: ${found.salt}`);
+                console.log(`   Address: ${found.vanityAddress}`);
                 proc.kill('SIGINT'); // Gracefully stop the miner
             }
         });
@@ -75,10 +77,12 @@ const worker = new Worker('vanitySalt', async (job) => {
             console.log(`Miner process exited with code ${code}, signal ${signal}`);
             
             if (found) {
-                console.log(`Job ${job.id} completed successfully`);
+                console.log(`✅ Job ${job.id} completed successfully - returning result to Redis:`);
+                console.log(`   Salt: ${found.salt}`);
+                console.log(`   Address: ${found.vanityAddress}`);
                 resolve(found);
             } else {
-                console.log(`Job ${job.id} failed - no valid result found`);
+                console.log(`❌ Job ${job.id} failed - no valid result found`);
                 reject(new Error('No valid vanity address found'));
             }
         });
@@ -93,13 +97,18 @@ const worker = new Worker('vanitySalt', async (job) => {
 }, {
     connection: redisConfig,
     concurrency: 1, // Process one job at a time per worker
-    removeOnComplete: 10, // Keep last 10 completed jobs
-    removeOnFail: 50, // Keep last 50 failed jobs
+    removeOnComplete: { count: 10, age: 24 * 3600 }, // Keep last 10 completed jobs for 24 hours
+    removeOnFail: { count: 50, age: 24 * 3600 }, // Keep last 50 failed jobs for 24 hours
+    stalledInterval: 30 * 1000, // Check for stalled jobs every 30 seconds
+    maxStalledCount: 1, // Maximum number of times a job can be marked as stalled
 });
 
 // Handle worker events
 worker.on('completed', (job, result) => {
-    console.log(`Worker completed job ${job.id} with result:`, result);
+    console.log(`🎉 Worker completed job ${job.id} with result:`);
+    console.log(`   Salt: ${result.salt}`);
+    console.log(`   Address: ${result.vanityAddress}`);
+    console.log(`   ✅ Result sent to Redis queue successfully!`);
 });
 
 worker.on('failed', (job, err) => {
@@ -113,13 +122,21 @@ worker.on('error', (err) => {
 // Graceful shutdown
 process.on('SIGINT', async () => {
     console.log('Shutting down worker...');
-    await worker.close();
+    try { 
+        await worker.close(); 
+    } catch (e) { 
+        console.error('Error closing worker:', e); 
+    }
     process.exit(0);
 });
 
 process.on('SIGTERM', async () => {
     console.log('Shutting down worker...');
-    await worker.close();
+    try { 
+        await worker.close(); 
+    } catch (e) { 
+        console.error('Error closing worker:', e); 
+    }
     process.exit(0);
 });
 
